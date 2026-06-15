@@ -95,13 +95,8 @@
             font-size: 12px;
         }
 
-        .matched {
-            background: #22c55e;
-        }
-
-        .missing {
-            background: #ef4444;
-        }
+        .matched { background: #22c55e; }
+        .missing { background: #ef4444; }
 
         .suggestion {
             background: #334155;
@@ -137,6 +132,9 @@ document.getElementById("btn").addEventListener("click", async function () {
     const output = document.getElementById("output");
     const loading = document.getElementById("loading");
 
+    // 🔥 IMPORTANT: YOUR RENDER BACKEND URL
+    const API_URL = "https://resume-screener-backend-t6pd.onrender.com";
+
     if (!fileInput.files.length) {
         alert("Upload PDF first");
         return;
@@ -151,33 +149,37 @@ document.getElementById("btn").addEventListener("click", async function () {
     output.innerHTML = "";
 
     const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
-    formData.append("jd", jdInput.value);
+
+    // ⚠️ MUST MATCH FastAPI backend
+    formData.append("resume", fileInput.files[0]);
+    formData.append("job_description", jdInput.value);
 
     try {
-        const res = await fetch("http://127.0.0.1:8000/analyze", {
+        const res = await fetch(`${API_URL}/analyze`, {
             method: "POST",
             body: formData
         });
+
+        if (!res.ok) {
+            throw new Error("Server error: " + res.status);
+        }
 
         const data = await res.json();
 
         loading.style.display = "none";
 
-        // Score color
         let scoreClass = "bad";
         if (data.score >= 75) scoreClass = "good";
         else if (data.score >= 50) scoreClass = "medium";
 
-        // Skills
-        const matched = (data.matched_skills || []).map(s => 
-            `<span class="tag matched">${s}</span>`).join("");
+        const matched = (data.matched_skills || [])
+            .map(s => `<span class="tag matched">${s}</span>`).join("");
 
-        const missing = (data.missing_skills || []).map(s => 
-            `<span class="tag missing">${s}</span>`).join("");
+        const missing = (data.missing_skills || [])
+            .map(s => `<span class="tag missing">${s}</span>`).join("");
 
-        const suggestions = (data.suggestions || []).map(s =>
-            `<div class="suggestion">💡 ${s}</div>`).join("");
+        const suggestions = (data.suggestions || [])
+            .map(s => `<div class="suggestion">💡 ${s}</div>`).join("");
 
         output.innerHTML = `
             <div class="score ${scoreClass}">Score: ${data.score}</div>
@@ -194,7 +196,7 @@ document.getElementById("btn").addEventListener("click", async function () {
 
             <div class="section">
                 <strong>🧠 Reason:</strong><br>
-                ${data.reason}
+                ${data.reason || data.feedback || "N/A"}
             </div>
 
             <div class="section">
@@ -202,6 +204,8 @@ document.getElementById("btn").addEventListener("click", async function () {
                 ${suggestions || "None"}
             </div>
         `;
+
+        console.log("🔥 Response:", data);
 
     } catch (err) {
         loading.style.display = "none";
