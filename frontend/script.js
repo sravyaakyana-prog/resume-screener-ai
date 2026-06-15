@@ -2,13 +2,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const btn = document.getElementById("btn");
 
+    // 🌐 YOUR RENDER BACKEND URL
+    const API_URL = "https://resume-screener-backend-t6pd.onrender.com";
+
     btn.addEventListener("click", async () => {
 
         const fileInput = document.getElementById("resume");
         const jdInput = document.getElementById("jd");
         const output = document.getElementById("output");
-
-        console.log("✅ Button clicked");
 
         if (!fileInput.files.length) {
             alert("Upload PDF first");
@@ -23,11 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
         output.innerText = "⏳ Analyzing resume...";
 
         const formData = new FormData();
+
+        // ⚠️ MUST MATCH FASTAPI BACKEND
         formData.append("file", fileInput.files[0]);
         formData.append("jd", jdInput.value);
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/analyze", {
+            const res = await fetch(`${API_URL}/analyze`, {
                 method: "POST",
                 body: formData
             });
@@ -38,9 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await res.json();
 
-            console.log("🔥 BACKEND RESPONSE:", data);
-
-            // ✅ FIX: ensure arrays are properly joined
             const matched = Array.isArray(data.matched_skills)
                 ? data.matched_skills.join(", ")
                 : "None";
@@ -49,27 +49,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? data.missing_skills.join(", ")
                 : "None";
 
-            const suggestions = Array.isArray(data.suggestions)
-                ? data.suggestions.join("\n")
-                : "None";
-
             output.innerText =
 `📊 Score: ${data.score}
 
 ✅ Matched Skills:
-${matched || "None"}
+${matched}
 
 ❌ Missing Skills:
-${missing || "None"}
+${missing}
 
 🧠 Reason:
-${data.reason}
-
-💡 Suggestions:
-${suggestions || "None"}`;
+${data.reason || data.feedback || "N/A"}`;
 
         } catch (err) {
-            console.error("❌ ERROR:", err);
             output.innerText = "❌ Error: " + err.message;
         }
     });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>AI Resume Screener</title>
@@ -52,17 +52,10 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: 0.3s;
         }
 
         button:hover {
             background: #2563eb;
-        }
-
-        .loading {
-            text-align: center;
-            margin-top: 10px;
-            display: none;
         }
 
         .result {
@@ -70,39 +63,7 @@
             padding: 15px;
             border-radius: 10px;
             background: #0f172a;
-        }
-
-        .score {
-            font-size: 22px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .good { color: #22c55e; }
-        .medium { color: #facc15; }
-        .bad { color: #ef4444; }
-
-        .section {
-            margin-top: 10px;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 5px 10px;
-            margin: 4px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .matched { background: #22c55e; }
-        .missing { background: #ef4444; }
-
-        .suggestion {
-            background: #334155;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 5px;
+            white-space: pre-line;
         }
     </style>
 </head>
@@ -110,7 +71,6 @@
 <body>
 
 <div class="container">
-
     <h2>🚀 AI Resume Screener</h2>
 
     <input type="file" id="resume" accept=".pdf">
@@ -118,101 +78,11 @@
 
     <button id="btn">Analyze Resume</button>
 
-    <div class="loading" id="loading">⏳ Analyzing...</div>
-
-    <div class="result" id="output"></div>
-
+    <div id="output" class="result"></div>
 </div>
 
-<script>
-document.getElementById("btn").addEventListener("click", async function () {
-
-    const fileInput = document.getElementById("resume");
-    const jdInput = document.getElementById("jd");
-    const output = document.getElementById("output");
-    const loading = document.getElementById("loading");
-
-    // 🔥 IMPORTANT: YOUR RENDER BACKEND URL
-    const API_URL = "https://resume-screener-backend-t6pd.onrender.com";
-
-    if (!fileInput.files.length) {
-        alert("Upload PDF first");
-        return;
-    }
-
-    if (!jdInput.value.trim()) {
-        alert("Enter Job Description");
-        return;
-    }
-
-    loading.style.display = "block";
-    output.innerHTML = "";
-
-    const formData = new FormData();
-
-    // ⚠️ MUST MATCH FastAPI backend
-    formData.append("resume", fileInput.files[0]);
-    formData.append("job_description", jdInput.value);
-
-    try {
-        const res = await fetch(`${API_URL}/analyze`, {
-            method: "POST",
-            body: formData
-        });
-
-        if (!res.ok) {
-            throw new Error("Server error: " + res.status);
-        }
-
-        const data = await res.json();
-
-        loading.style.display = "none";
-
-        let scoreClass = "bad";
-        if (data.score >= 75) scoreClass = "good";
-        else if (data.score >= 50) scoreClass = "medium";
-
-        const matched = (data.matched_skills || [])
-            .map(s => `<span class="tag matched">${s}</span>`).join("");
-
-        const missing = (data.missing_skills || [])
-            .map(s => `<span class="tag missing">${s}</span>`).join("");
-
-        const suggestions = (data.suggestions || [])
-            .map(s => `<div class="suggestion">💡 ${s}</div>`).join("");
-
-        output.innerHTML = `
-            <div class="score ${scoreClass}">Score: ${data.score}</div>
-
-            <div class="section">
-                <strong>✅ Matched Skills:</strong><br>
-                ${matched || "None"}
-            </div>
-
-            <div class="section">
-                <strong>❌ Missing Skills:</strong><br>
-                ${missing || "None"}
-            </div>
-
-            <div class="section">
-                <strong>🧠 Reason:</strong><br>
-                ${data.reason || data.feedback || "N/A"}
-            </div>
-
-            <div class="section">
-                <strong>💡 Suggestions:</strong><br>
-                ${suggestions || "None"}
-            </div>
-        `;
-
-        console.log("🔥 Response:", data);
-
-    } catch (err) {
-        loading.style.display = "none";
-        output.innerHTML = "❌ Error: " + err.message;
-    }
-});
-</script>
+<!-- IMPORTANT: only one script -->
+<script src="script.js"></script>
 
 </body>
 </html>
