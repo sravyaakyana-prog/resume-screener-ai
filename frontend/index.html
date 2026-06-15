@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI Resume Screener</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 520px;
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+        }
+
+        textarea {
+            height: 120px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #0f172a;
+        }
+
+        .score {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .good { color: #22c55e; }
+        .medium { color: #facc15; }
+        .bad { color: #ef4444; }
+
+        .section {
+            margin-top: 10px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 4px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .matched {
+            background: #22c55e;
+        }
+
+        .missing {
+            background: #ef4444;
+        }
+
+        .suggestion {
+            background: #334155;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>🚀 AI Resume Screener</h2>
+
+    <input type="file" id="resume" accept=".pdf">
+    <textarea id="jd" placeholder="Paste Job Description"></textarea>
+
+    <button id="btn">Analyze Resume</button>
+
+    <div class="loading" id="loading">⏳ Analyzing...</div>
+
+    <div class="result" id="output"></div>
+
+</div>
+
+<script>
+document.getElementById("btn").addEventListener("click", async function () {
+
+    const fileInput = document.getElementById("resume");
+    const jdInput = document.getElementById("jd");
+    const output = document.getElementById("output");
+    const loading = document.getElementById("loading");
+
+    if (!fileInput.files.length) {
+        alert("Upload PDF first");
+        return;
+    }
+
+    if (!jdInput.value.trim()) {
+        alert("Enter Job Description");
+        return;
+    }
+
+    loading.style.display = "block";
+    output.innerHTML = "";
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("jd", jdInput.value);
+
+    try {
+        const res = await fetch("http://127.0.0.1:8000/analyze", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        loading.style.display = "none";
+
+        // Score color
+        let scoreClass = "bad";
+        if (data.score >= 75) scoreClass = "good";
+        else if (data.score >= 50) scoreClass = "medium";
+
+        // Skills
+        const matched = (data.matched_skills || []).map(s => 
+            `<span class="tag matched">${s}</span>`).join("");
+
+        const missing = (data.missing_skills || []).map(s => 
+            `<span class="tag missing">${s}</span>`).join("");
+
+        const suggestions = (data.suggestions || []).map(s =>
+            `<div class="suggestion">💡 ${s}</div>`).join("");
+
+        output.innerHTML = `
+            <div class="score ${scoreClass}">Score: ${data.score}</div>
+
+            <div class="section">
+                <strong>✅ Matched Skills:</strong><br>
+                ${matched || "None"}
+            </div>
+
+            <div class="section">
+                <strong>❌ Missing Skills:</strong><br>
+                ${missing || "None"}
+            </div>
+
+            <div class="section">
+                <strong>🧠 Reason:</strong><br>
+                ${data.reason}
+            </div>
+
+            <div class="section">
+                <strong>💡 Suggestions:</strong><br>
+                ${suggestions || "None"}
+            </div>
+        `;
+
+    } catch (err) {
+        loading.style.display = "none";
+        output.innerHTML = "❌ Error: " + err.message;
+    }
+});
+</script>
+
+</body>
+</html>
